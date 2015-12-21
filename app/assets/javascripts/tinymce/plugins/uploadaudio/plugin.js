@@ -1,8 +1,8 @@
 (function() {
-  tinymce.PluginManager.requireLangPack('uploadmedia');
+  tinymce.PluginManager.requireLangPack('uploadaudio');
 
-  tinymce.create('tinymce.plugins.UploadMedia', {
-    UploadMedia: function(ed, url) {
+  tinymce.create('tinymce.plugins.UploadAudio', {
+    UploadAudio: function(ed, url) {
       var form,
           iframe,
           win,
@@ -11,12 +11,12 @@
 
       function showDialog() {
         win = editor.windowManager.open({
-          title: ed.translate('Insert an Media file from your computer'),
-          width:  500 + parseInt(editor.getLang('uploadmedia.delta_width', 0), 10),
-          height: 180 + parseInt(editor.getLang('uploadmedia.delta_height', 0), 10),
+          title: ed.translate('Insert an audio file from your computer'),
+          width:  500 + parseInt(editor.getLang('uploadaudio.delta_width', 0), 10),
+          height: 180 + parseInt(editor.getLang('uploadaudio.delta_height', 0), 10),
           body: [
             {type: 'iframe',  url: 'javascript:void(0)'},
-            {type: 'textbox', name: 'file', label: ed.translate('Choose an media file'), subtype: 'file'},
+            {type: 'textbox', name: 'file', label: ed.translate('Choose an audio file'), subtype: 'file'},
             {type: 'textbox', name: 'alt',  label: ed.translate(' Description')},
             {type: 'container', classes: 'error', html: "<p style='color: #b94a48;'>&nbsp;</p>"},
 
@@ -26,7 +26,7 @@
           buttons: [
             {
               text: ed.translate('Insert'),
-              onclick: insertMedia,
+              onclick: insertVideo,
               subtype: 'primary'
             },
             {
@@ -40,12 +40,12 @@
 
         // TinyMCE likes pointless submit handlers
         win.off('submit');
-        win.on('submit', insertMedia);
+        win.on('submit', insertVideo);
 
         /* WHY DO YOU HATE <form>, TINYMCE!? */
         iframe = win.find("iframe")[0];
         form = createElement('form', {
-          action: ed.getParam("uploadmedia_form_url", "/tinymce_assets"),
+          action: ed.getParam("uploadaudio_form_url", "/tinymce_assets"),
           target: iframe._id,
           method: "POST",
           enctype: 'multipart/form-data',
@@ -59,7 +59,7 @@
         // Create some needed hidden inputs
         form.appendChild(createElement('input', {type: "hidden", name: "utf8", value: "✓"}));
         form.appendChild(createElement('input', {type: 'hidden', name: 'authenticity_token', value: getMetaContents('csrf-token')}));
-        form.appendChild(createElement('input', {type: 'hidden', name: 'hint', value: ed.getParam("uploadmedia_hint", "")}));
+        form.appendChild(createElement('input', {type: 'hidden', name: 'hint', value: ed.getParam("uploadaudio_hint", "")}));
 
         var el = win.getEl();
         var body = document.getElementById(el.id + "-body");
@@ -94,7 +94,7 @@
         body.appendChild(form);
       }
 
-      function insertMedia() {
+      function insertVideo() {
         if(getInputValue("file") == "") {
           return handleError('You must choose a file');
         }
@@ -137,7 +137,6 @@
       function handleResponse(ret) {
         try {
           var json = tinymce.util.JSON.parse(ret);
-
           if(json["error"]) {
             handleError(json["error"]["message"]);
           } else {
@@ -175,38 +174,30 @@
       }
 
       function buildHTML(json) {
-        var default_class = ed.getParam("uploadmedia_default_media_class", "");
-        var figure = ed.getParam("uploadmedia_figure", false);
+        var default_class = ed.getParam("uploadaudio_default_class", "");
+        var figure = ed.getParam("uploadaudio_figure", false);
         var alt_text = getInputValue("alt");
-
-        var imgstr = "<video controls='controls'/>";
-         imgstr+= "<source src='" + json["media"]["url"] + "'";
-
+        var imgstr = "<audio controls='controls'";
+        if(json["audio"]["height"])
+          imgstr += " height='" + json["audio"]["height"] + "'";
+        if(json["audio"]["width"])
+          imgstr += " width='"  + json["audio"]["width"]  + "'";
+        imgstr+='>';
+        imgstr+= "<source src='" + json["audio"]["url_mp3"] + "' type= 'audio/mpeg' ";
         if(default_class != "")
           imgstr += " class='" + default_class + "'";
-
-        if(json["media"]["height"])
-          imgstr += " height='" + json["media"]["height"] + "'";
-        if(json["media"]["width"])
-          imgstr += " width='"  + json["media"]["width"]  + "'";
-
-        imgstr += " alt='" + alt_text + "'></source></video>";
-        alert()
-        //var imgstr = "<iframe src='" + json["media"]["url"] + "'";
-        //
-        //if(default_class != "")
-        //  imgstr += " class='" + default_class + "'";
-        //
-        //if(json["media"]["height"])
-        //  imgstr += " height='" + json["media"]["height"] + "'";
-        //if(json["media"]["width"])
-        //  imgstr += " width='"  + json["media"]["width"]  + "'";
-        //
-        //imgstr += " alt='" + alt_text + "'/></iframe>";
+          imgstr += " alt='" + alt_text;
+          imgstr +="><\/source>";
+        imgstr+= "<source src='" + json["audio"]["url_ogg"] + "' type= 'audio/ogg'";
+        if(default_class != "")
+          imgstr += " class='" + default_class + "'";
+          imgstr += " alt='" + alt_text;
+          imgstr +="><\/source>";
+        imgstr += 'Your browser does not support the audio element.'+'<\/audio>';
 
         if(figure) {
-          var figureClass = ed.getParam("uploadmedia_figure_class", "figure");
-          var figcaptionClass = ed.getParam("uploadmedia_figcaption_class", "figcaption");
+          var figureClass = ed.getParam("uploadvideo_figure_class", "figure");
+          var figcaptionClass = ed.getParam("uploadvideo_figcaption_class", "figcaption");
 
           var figstr = "<figure";
 
@@ -246,15 +237,15 @@
       }
 
       // Add a button that opens a window
-      editor.addButton('uploadmedia', {
-        tooltip: ed.translate('Insert an Media file from your computer'),
+      editor.addButton('uploadaudio', {
+        tooltip: ed.translate('Insert an audio file from your computer'),
         icon : 'media',
         onclick: showDialog
       });
 
       // Adds a menu item to the tools menu
-      editor.addMenuItem('uploadmedia', {
-        text: ed.translate('Insert an Media file from your computer'),
+      editor.addMenuItem('uploadaudio', {
+        text: ed.translate('Insert an audio file from your computer'),
         icon : 'media',
         context: 'insert',
         onclick: showDialog
@@ -262,5 +253,5 @@
     }
   });
 
-  tinymce.PluginManager.add('uploadmedia', tinymce.plugins.UploadMedia);
+  tinymce.PluginManager.add('uploadaudio', tinymce.plugins.UploadAudio);
 })();
