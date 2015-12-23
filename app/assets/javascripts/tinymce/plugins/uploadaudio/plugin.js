@@ -134,18 +134,45 @@
         }
       }
 
+      //function handleResponse(ret) {
+      //  try {
+      //    var json = tinymce.util.JSON.parse(ret);
+      //    if(json["error"]) {
+      //      handleError(json["error"]["message"]);
+      //    } else {
+      //      ed.execCommand('mceInsertContent', false, buildHTML(json));
+      //      ed.windowManager.close();
+      //    }
+      //  } catch(e) {
+      //    handleError('Got a bad response from the server');
+      //  }
+      //}
+      /*               customized method to handle html*/
       function handleResponse(ret) {
         try {
-          var json = tinymce.util.JSON.parse(ret);
-          if(json["error"]) {
-            handleError(json["error"]["message"]);
-          } else {
-            ed.execCommand('mceInsertContent', false, buildHTML(json));
+          if(isJSON(ret)){
+            var json = tinymce.util.JSON.parse(ret);
+
+            if (json["error"]) {
+              handleError(json["error"]["message"]);
+            }
+          }
+          else {
+            ed.execCommand('mceInsertContent', false, ret);
             ed.windowManager.close();
           }
-        } catch(e) {
+        } catch (e) {
           handleError('Got a bad response from the server');
         }
+      }
+
+      function isJSON(str) {
+        try {
+          JSON.parse(str);
+        } catch (e) {
+          return false;
+        }
+        return true;
       }
 
       function clearErrors() {
